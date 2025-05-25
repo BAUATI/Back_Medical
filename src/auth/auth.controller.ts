@@ -1,70 +1,40 @@
-import { Controller, Get, Post, Body, UseGuards, Req, HttpCode, HttpStatus, SetMetadata } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, SetMetadata } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
 import { AuthGuard } from '@nestjs/passport';
-import { GetUser } from './decorators/get-user.decorator';
-import { User } from './entities/user.entity';
-import { RawHeaders } from './decorators/raw-header.decorator';
+import { GetUser } from './decorator/get-user.decorator';
+import { Usuario } from './entities/user.entity';
 import { UserRoleGuard } from './guards/user-role.guard';
-import { RolProtected } from './decorators/rol-protected.decorator';
-import { ValidRols } from './interfaces/valid-rols';
-import { Auth } from './decorators/auth.decorator';
+import { RolProtected } from './decorator/rol-protected.decorator';
+import { Rol } from './interfaces/valid-rol';
+import { Auth } from './decorator/auth.decorator';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService) { }
 
   @Post('register')
-  createUser(@Body() createUserDto: CreateUserDto) {
-    return this.authService.createUser(createUserDto);
+  // @Auth(Rol.admin)
+  create(
+    @Body() createUserDto: CreateUserDto)
+     {
+    return this.authService.create(createUserDto);
   }
 
-  @HttpCode(HttpStatus.OK)
   @Post('login')
   loginUser(@Body() loginUserDto: LoginUserDto) {
-    return this.authService.loginUser(loginUserDto);
-  }
-
-  @Get('private')
-  @UseGuards( AuthGuard() )
-  testingPrivateRoute(
-   @GetUser() user: User,
-   @RawHeaders() rawHeaders: string[]
-  ){  
-    return {
-      user,
-      rawHeaders
-    }
-  }
-  @Get('private2')
-  @RolProtected(ValidRols.administrativo)
-  @UseGuards( AuthGuard(), UserRoleGuard )
-  testingPrivateRoute2(
-   @GetUser() user: User,  
-  ){  
-    return {
-      user,
-      
-    }
-  }
-
-  @Get('private3')
-  @Auth()
-  testingPrivateRoute3(
-   @GetUser() user: User,  
-  ){  
-    return {
-      user,
-      
-    }
+    return this.authService.login(loginUserDto);
   }
 
   @Get('revalidate')
   @UseGuards(AuthGuard())
   validateToken(
     @Req() req: Express.Request,
-    @GetUser() user: User,   
+    @GetUser() user: Usuario,   
   ) {
     return {
       ok: true,
@@ -73,4 +43,53 @@ export class AuthController {
     }
   }
 
+  @Get('validate')
+  @RolProtected(Rol.administrativo)
+  @UseGuards(AuthGuard(), UserRoleGuard)
+  findvalidateUser(
+    @GetUser() user: Usuario,
+    
+  ) {
+    return {
+      ok: true,
+      user
+    }
+  }
+
+  @Get('validateData')
+  @Auth()
+  validateData(
+    @GetUser() user: Usuario,
+    
+  ) {
+    return {
+      ok: true,
+      user
+    }
+  }
+
+  @Get('check-status')
+  @Auth()
+  checkAuthStatus(
+    @GetUser() user:Usuario
+  ){
+    return this.authService.checkAuthStatus(user)
+  }
+
+
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.authService.findOne(+id);
+  }
+
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+    return this.authService.update(+id, updateUserDto);
+  }
+
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.authService.remove(+id);
+  }
 }

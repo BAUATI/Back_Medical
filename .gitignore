@@ -1,39 +1,57 @@
-# compiled output
-/dist
-/node_modules
+# Node.js dependencies
+node_modules/
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
 
-postgres/
+# Directorios de compilación
+dist/
+build/
 
+# Archivos de entorno y configuraciones sensibles
 .env
+.env.development
+.env.production
+.env.test
+.env.local
 
-# Logs
-logs
-*.log
+# Logs y depuración
 npm-debug.log*
-pnpm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 lerna-debug.log*
+*.log
 
-# OS
+# Configuración del editor (VS Code, WebStorm, etc.)
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Caché de dependencia y configuraciones locales
+.cache/
+.npm/
+.pnpm/
+.yarn/
+.eslintcache
+.nest-cli.json
+node-repl-history
+package.json.bak
+
+# Archivos de test y coverage
+coverage/
+jest.config.js
+jest.setup.js
+*.spec.ts
+*.test.ts
+*.tsbuildinfo
+
+# Archivos del sistema
 .DS_Store
+Thumbs.db
 
-# Tests
-/coverage
-/.nyc_output
-
-# IDEs and editors
-/.idea
-.project
-.classpath
-.c9/
-*.launch
-.settings/
-*.sublime-workspace
-
-# IDE - VSCode
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
+# Docker
+docker-compose.override.yml

@@ -1,44 +1,41 @@
-import { CanActivate, ExecutionContext, Injectable, ForbiddenException } from '@nestjs/common';
+import { BadRequestException, CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Observable } from 'rxjs';
-import { META_ROLS } from '../decorators/rol-protected.decorator';
-import { ValidRols } from '../interfaces/valid-rols';
+import { Usuario } from '../entities/user.entity';
+import { META_ROL } from '../decorator/rol-protected.decorator';
 
 @Injectable()
 export class UserRoleGuard implements CanActivate {
-  constructor(private readonly reflector: Reflector) {}
 
-  canActivate(context: ExecutionContext): boolean | Promise<boolean> | Observable<boolean> {
-    const requiredRoles = this.reflector.getAllAndOverride<ValidRols[]>(META_ROLS, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
+  constructor(
+    private readonly reflactor: Reflector
+  ) { }
 
-    if (!requiredRoles || requiredRoles.length === 0) {
+  canActivate(
+    context: ExecutionContext,
+  ): boolean | Promise<boolean> | Observable<boolean> {
+
+    const validRol: string[] = this.reflactor.get(META_ROL, context.getHandler());
+
+    if(!validRol) return true
+    if(validRol.length === 0) return true
+   
+    const req = context.switchToHttp().getRequest();
+    const user = req.user as Usuario;
+
+    if (!user) {
+      throw new BadRequestException('No existe el usuario');
+    }
+    
+    if (!user.rol) {
+      throw new BadRequestException('El rol del usuario no está definido');
+    }
+    
+    if (validRol.includes(user.rol)) {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest();
-    const user = request.user;
+    throw new ForbiddenException(`El usuario no tiene permisos necesarios`);
 
-    if (!user) {
-      throw new ForbiddenException('Usuario no autenticado');
-    }
-
-    // Parsear rols si es un string JSON
-    let userRoles: string[];
-    try {
-      userRoles = typeof user.rols === 'string' ? JSON.parse(user.rols) : user.rols;
-    } catch (error) {
-      throw new ForbiddenException('Error al parsear los roles del usuario');
-    }
-
-    const hasRole = requiredRoles.some((role) => userRoles.includes(role));
-
-    if (!hasRole) {
-      throw new ForbiddenException(`No tienes los permisos necesarios. Roles requeridos: ${requiredRoles.join(', ')}`);
-    }
-
-    return true;
   }
 }

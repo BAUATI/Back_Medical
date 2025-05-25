@@ -1,57 +1,136 @@
-import { IsArray, IsBoolean, IsEmail, IsOptional, IsString, Matches, MaxLength, MinLength } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
+import {
+  IsBoolean,
+  IsEmail,
+  IsJSON,
+  IsNumber,
+  IsObject,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Matches,
+  MaxLength,
+  MinLength,
+} from "class-validator";
 
 export class CreateUserDto {
-    @IsString()
-    @IsEmail()
-    email: string;
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  rol?: string;
 
-    @IsString()
-    firstName: string;
+  @ApiProperty()
+  @IsString({
+    message: "El nombre es campo requerido",
+  })
+  nombre: string;
 
-    @IsString()
-    lastName: string;
+  @ApiProperty()
+  @IsString({
+    message: "El sexo es campo requerido",
+  })
+  @IsOptional()
+  sexo?: string;
 
-    @IsString()
-    @IsOptional()
-    username?: string;
+  @ApiProperty()
+  @IsString({
+    message: "La fecha de nacimiento es campo requerido",
+  })
+  @IsOptional()
+  fecha_nacimiento?: string;
 
-    @IsString()
-    @MinLength(6)
-    password: string;
+  @ApiProperty()
+  @IsString({
+    message: "La fecha de ingreso es campo requerido",
+  })
+  @IsOptional()
+  fecha_ingreso?: string;
 
-    @IsArray()
-    @IsOptional()
-    rols?: string[];
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  registro?: string;
 
-    @IsString()
-    @IsOptional()
-    documentId?: string;
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  especialidad?: string;
 
-    @IsString()
-    @IsOptional()
-    birthDate?: string; 
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  registro_profesional?: string;
 
-    @IsString()
-    @IsOptional()
-    phone?: string;
+  @ApiProperty()
+  @IsString()
+  cedula: string;
 
-    @IsString()
-    @IsOptional()
-    address?: string;
+  @ApiProperty()
+  @IsString()
+  password: string;
 
-    @IsString()
-    @IsOptional()
-    healthCoverage?: string;
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  telefono?: string;
 
-    @IsString()
-    @IsOptional()
-    specialty?: string;
+  @ApiProperty()
+  @IsString({
+    message: "El username debe ser una cadena de texto",
+  })
+  @IsOptional()
+  username?: string;
 
-    @IsString()
-    @IsOptional()
-    medicalLicense?: string;
+  @ApiProperty()
+  @IsString({
+    message: "El correo es obligatorio",
+  })
+  correo: string;
 
-    @IsOptional()
-    @IsBoolean()
-    isActive?: boolean;
+  @ApiProperty()
+  @IsString({
+    message: "La direccion debe ser una cadena de texto",
+  })
+  @IsOptional()
+  direccion?: string;
+
+  @ApiProperty()
+  @IsString({
+    message: "La direccion debe ser una cadena de texto",
+  })
+  @IsOptional()
+  eps?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  cargo?: string;
+
+  @ApiProperty()
+  @IsNumber()
+  @IsOptional()
+  creado_por?: number;
+
+  @ApiProperty()
+  @IsNumber()
+  @IsOptional()
+  modificado_por?: number;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  isEstado?: string;
+
+  @ApiProperty()
+  @IsBoolean()
+  @IsOptional()
+  estado?: boolean;
+
+  @ApiProperty({
+    description: "ID de la sede a la que pertenece el usuario",
+    required: false,
+  })
+  @IsUUID()
+  @IsOptional()
+  sedeId?: string;
 }

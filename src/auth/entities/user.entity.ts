@@ -1,67 +1,73 @@
-import { PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Entity, BeforeInsert, BeforeUpdate } from "typeorm";
 
-@Entity('users')
-export class User {
-    @PrimaryGeneratedColumn('uuid')
-    id: string;
+import { Sede } from 'src/sedes/entities/sede.entity';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
-    @Column('varchar')
-    firstName: string;
+@Entity('usuarios')
+export class Usuario {
 
-    @Column('varchar')
-    lastName: string;
+  @PrimaryGeneratedColumn('uuid')
+  uid: string;
 
-    @Column('varchar', { unique: true })
-    email: string;
+  @Column({ unique: true })
+  correo: string;
 
-    @Column('varchar', { unique: true, nullable: true })
-    username: string;
+  @Column({ nullable: true, select: false })
+  password?: string;
 
-    @Column('varchar', { select: false })
-    password: string;
+  @Column()
+  nombre: string;
 
-    @Column('text', { default: '["PACIENTE"]' })
-    rols: string;
+  @Column('varchar', { default: 'PACIENTE' })
+  rol: string;
 
-    @Column('varchar', { unique: true, nullable: true })
-    documentId: string;
+  @Column('varchar', { unique: true })
+  cedula: string;
 
-    @Column('date', { nullable: true })
-    birthDate: Date;
+  @Column({ nullable: true, default: "No aplica" }) 
+  telefono?: string;
 
-    @Column('varchar', { nullable: true })
-    phone: string;
+  @Column({ nullable: true, default: "No aplica" }) 
+  direccion?: string;
 
-    @Column('varchar', { nullable: true })
-    address: string;
+  @Column({ nullable: true, default: "No aplica" }) 
+  sexo?: string;
 
-    @Column('varchar', { nullable: true })
-    healthCoverage: string;
+  @Column({ nullable: true, default: "No aplica" }) 
+  fecha_nacimiento?: string;
 
-    @Column('varchar', { nullable: true })
-    specialty: string;
+  @Column({ nullable: true, default: "No aplica" }) 
+  especialidad?: string;
 
-    @Column('varchar', { nullable: true })
-    medicalLicense: string;
+  @Column({ nullable: true, default: "No aplica" }) 
+  registro_profesional?: string;
 
-    @Column('boolean', { default: true })
-    isActive: boolean;
+  @Column({ nullable: true, default: "No aplica" }) 
+  cargo?: string;
 
-    @CreateDateColumn({ type: 'timestamp' })
-    registration_date: Date;
+  @Column({ nullable: true, default: "No aplica" }) 
+  eps?: string;
 
-    @UpdateDateColumn({ type: 'timestamp' })
-    update_registration: Date;
+  @Column({ default: true })
+  estado: boolean;
 
-    @BeforeInsert()
-    @BeforeUpdate()
-    parseRols() {
-        if (typeof this.rols === 'object') {
-            this.rols = JSON.stringify(this.rols);
-        }
-    }
+  @Column({ nullable: true, default: "No aplica" }) 
+  isEstado?: string;
 
-    getParsedRols(): string[] {
-        return JSON.parse(this.rols);
-      }
+  @ManyToOne(() => Sede, { nullable: true, eager: true })
+  @JoinColumn({ name: 'sede_id' })
+  sede?: Sede;
+
+  @CreateDateColumn()
+  fecha_creacion: Date;
+
+  @UpdateDateColumn({ nullable: true })
+  fecha_modificacion: Date;
 }

@@ -1,7 +1,7 @@
 import { PassportStrategy } from "@nestjs/passport";
-import { ExtractJwt, Strategy } from "passport-jwt";
-import { User } from "../entities/user.entity";
-import { JwtPayLoad } from "../interfaces/jwt-payload.interface";
+import { Strategy, ExtractJwt } from "passport-jwt";
+import { Usuario } from "../entities/user.entity";
+import { JwtPayload } from "../interfaces/jwt-payload";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { ConfigService } from "@nestjs/config";
@@ -9,39 +9,30 @@ import { Injectable, UnauthorizedException } from "@nestjs/common";
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-
     constructor(
-        @InjectRepository(User)
-        private readonly userRepository: Repository<User>,
+        @InjectRepository(Usuario)
+        private readonly userRepository: Repository<Usuario>,
         configService: ConfigService,
     ) {
         super({
             ignoreExpiration: false,
-            secretOrKey: configService.get('SECRET'),
+            secretOrKey: configService.get('JWT_SECRET'),
             jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken()
         });
     }
+    async validate(payload: JwtPayload): Promise<Usuario> {
 
-    async validate(payload: JwtPayLoad): Promise<User> {
+        const { uid } = payload;
+        
+        const user = await this.userRepository.findOneBy({ uid });
 
-        const { id } = payload;
+        if (!user)
+            throw new UnauthorizedException('Token no válido');
+        if (!user.estado)
+            throw new UnauthorizedException('Usuario inactivo');
 
-        const user = await this.userRepository.findOne({
-            where: { id },
-            select: ['id', 'username', 'firstName', 'lastName', 'rols', 'isActive'],
-          });
       
-          if (!user) {
-            throw new UnauthorizedException('Invalid token');
-          }
-      
-          if (!user.isActive) {
-            throw new UnauthorizedException('Inactive user');
-          }
-
-          
-      
-          return user;
+        return user;
     }
 
 }

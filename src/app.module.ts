@@ -2,47 +2,47 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CommonModule } from './common/common.module';
-import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
-import { SedeModule } from './sede/sede.module';
-import { ConsultorioModule } from './consultorio/consultorio.module';
-import { ScheduleModule } from './schedule/schedule.module';
-import { AppointmentModule } from './appointment/appointment.module';
-import { MedicalRecordsModule } from './medical-records/medical-records.module';
+import { UsuariosModule } from './usuarios/usuarios.module';
+import { SedesModule } from './sedes/sedes.module';
+import { CitasModule } from './citas/citas.module';
+import { HorariosModule } from './horarios/horarios.module';
+import { HistoriasClinicasModule } from './historias-clinicas/historias-clinicas.module';
+import { PrescripcionesModule } from './prescripciones/prescripciones.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { DashboardModule } from './dashboard/dashboard.module';
+
 
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     ConfigModule.forRoot(),
-
-    TypeOrmModule.forRoot({
+    TypeOrmModule.forRoot({   
       type: 'mysql',
       host: process.env.DB_HOST,
       port: +process.env.DB_PORT,
-      database: process.env.DB_NAME,
       username: process.env.DB_USERNAME,
-      password: process.env.DB_PASSWORD,      
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
       autoLoadEntities: true,
+      timezone: "Z",
       synchronize: true,
     }),
 
-    CommonModule,
-
-    UsersModule,
-
+    CommonModule,   
     AuthModule,
-
-    SedeModule,
-
-    ConsultorioModule,
-
-    ScheduleModule,
-
-    AppointmentModule,
-
-    MedicalRecordsModule,
+    UsuariosModule,
+    SedesModule,
+    CitasModule,
+    HorariosModule,
+    HistoriasClinicasModule,
+    PrescripcionesModule,
+    DashboardModule,
 
 
   ],
+  controllers: [],
+  providers: [],
 })
 export class AppModule {}

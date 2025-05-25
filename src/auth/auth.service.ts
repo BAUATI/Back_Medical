@@ -1,110 +1,150 @@
-import { BadRequestException, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
-import { InjectRepository } from '@nestjs/typeorm';
-import { User } from './entities/user.entity';
-import { Repository } from 'typeorm';
-import * as bcrypt from 'bcrypt'
-import { LoginUserDto } from './dto/login-user.dto';
-import { JwtService } from '@nestjs/jwt';
-import { JwtPayLoad } from './interfaces/jwt-payload.interface';
-import { MenuSiderbar } from 'src/middlewares/menu-ros';
+import {
+  BadRequestException,
+  Injectable,
+} from "@nestjs/common";
+import { CreateUserDto } from "./dto/create-user.dto";
+import { UpdateUserDto } from "./dto/update-user.dto";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Usuario } from "./entities/user.entity";
+import { Repository } from "typeorm";
+import { handleCustomError } from "src/functions/error";
+import { LoginUserDto } from "./dto/login-user.dto";
+import { JwtPayload } from "./interfaces/jwt-payload";
+import { JwtService } from "@nestjs/jwt";
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
-
   constructor(
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
+    @InjectRepository(Usuario)
+    private readonly authRepository: Repository<Usuario>,
     private readonly jwtService: JwtService
-  ) { }
+  ) {}
 
-  private getJwtToken(payload: JwtPayLoad) {
+  private getJwtToken(payload: JwtPayload) {
     const token = this.jwtService.sign(payload);
     return token;
   }
 
-  async createUser(createUserDto: CreateUserDto) {
-    try {
-        const { password, birthDate, rols, ...userData } = createUserDto;
+async create(createUserDto: CreateUserDto): Promise<Usuario> {
+  try {
+    const { correo, cedula, password, ...resto } = createUserDto;
 
-        const user = this.userRepository.create({
-            ...userData,
-            password: bcrypt.hashSync(password, 10),
-            birthDate: birthDate ? new Date(birthDate) : null,
-            rols: rols ? JSON.stringify(rols) : JSON.stringify(['PACIENTE'])
-        });
+    // Validar existencia por correo o cédula
+    const existe = await this.authRepository.findOne({
+      where: [{ correo }, { cedula }],
+    });
 
-        await this.userRepository.save(user);
-
-        delete user.password;
-
-        return user;
-    } catch (error) {
-        console.log(error);
-        this.handleError(error);
+    if (existe) {
+      throw new BadRequestException('Ya existe un usuario con ese correo o cédula');
     }
+
+    // Encriptar contraseña si existe
+    let hashedPassword: string | undefined;
+    if (password) {
+      const salt = await bcrypt.genSalt();
+      hashedPassword = await bcrypt.hash(password, salt);
+    }
+
+    // Crear usuario
+    const user = this.authRepository.create({
+      ...resto,
+      correo,
+      cedula,
+      password: hashedPassword,
+    });
+
+    const nuevoUsuario = await this.authRepository.save(user);
+
+    // Evitar retornar el password
+    delete (nuevoUsuario as any).password;
+
+    return nuevoUsuario;
+
+  } catch (error) {
+    console.error(error);
+    throw handleCustomError(error);
+  }
 }
 
+async login(loginUserDto: LoginUserDto) {
+  try {
+    const { correo, password } = loginUserDto;
 
-  async loginUser(loginUser: LoginUserDto) {
+  // Buscar usuario incluyendo el password encriptado
+  const user = await this.authRepository.findOne({
+    where: { correo },
+    select: {
+      uid: true,
+      correo: true,
+      password: true,
+      rol: true,
+      nombre: true,
+      estado: true,
+    },
+  });
 
-    const { email, password } = loginUser
-
-    const user = await this.userRepository.findOne({
-      where: { email },
-      select: {
-        username: true,
-        password: true,
-        id: true,
-        rols: true,
-        isActive: true,
-        firstName: true
-      }
-    })
-
-    if (!user)
-      throw new UnauthorizedException('Verify credentials')
-
-    if (!bcrypt.compareSync(password, user.password))
-      throw new UnauthorizedException('Verify credentials')
-
-    if (!user.isActive)
-      throw new UnauthorizedException('Inactive user')
-
-    const rols = JSON.parse(user.rols);
-    const menu = MenuSiderbar(rols);
-
-    return {
-      token: this.getJwtToken({ id: user.id }),
-      user: {
-        username: user.username,
-        id: user.id,
-        rols: user.rols,
-        isActive: user.isActive,
-        firstName: user.firstName,
-        menu        
-      }
-    }
-
+  if (!user) {
+    throw new BadRequestException("Necesitas permisos del administrador del aplicativo para ingresar aquí");
   }
 
-  async checkAuthStatus(user: User){
-    const {id} = user
-    const token = this.getJwtToken({id})
+  if (!user.estado) {
+    throw new BadRequestException("Usuario desactivado, comunícate con el administrador");
+  }
+
+  // Validar que el password coincida
+  const passwordValido = await bcrypt.compare(password, user.password);
+  if (!passwordValido) {
+    throw new BadRequestException("Credenciales incorrectas");
+  }
+
+  // Retornar token y datos públicos
+  return {
+    token: this.getJwtToken({ uid: user.uid }),
+    user: {
+      id: user.uid,
+      correo: user.correo,
+      nombre: user.nombre,
+      rol: user.rol,
+    },
+  };
+  } catch (error) {
+     console.error(error);
+
+  // Si ya es una excepción de Nest, simplemente relánzala
+  if (error instanceof BadRequestException) {
+    throw error;
+  }
+
+  // Si es otra cosa inesperada
+  throw new BadRequestException("Error en el servicio, revisa los logs");
+  }
+}
+
+  async checkAuthStatus(user: Usuario) {
+    const { uid } = user;
+    const token = this.getJwtToken({ uid });
     return {
-      ok: true,    
-      id,
+      ok: true,
+      uid,
       token,
-      user
-    }
+      user,
+    };
   }
 
-  private handleError(error: any) {
-    if (error.code === 'ER_DUP_ENTRY' )
-      throw new BadRequestException(error.sqlMessage);
-    console.log(error)
-
-    throw new InternalServerErrorException('Verifica los logs del servidor')
+  findAll() {
+    return `This action returns all auth`;
   }
 
+  findOne(id: number) {
+    return `This action returns a #${id} auth`;
+  }
+
+  update(id: number, updateUserDto: UpdateUserDto) {
+    return `This action updates a #${id} auth`;
+  }
+
+  remove(id: number) {
+    return `This action removes a #${id} auth`;
+  }
 }
